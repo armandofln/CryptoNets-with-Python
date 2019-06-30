@@ -365,21 +365,25 @@ with tf.Session() as sess:
         confronta(ris, temp)
 
     #convoluzione + flatten CRIPTATI TEST
+    encoded_input = cripta(encoded_input)
     polys_groups_count = 4097*4*2
-    polys_groups_count = 250*4*2#elotro
-    polys_groups_count = ris.shape[0]//polys_groups_count
+    #polys_groups_count = 250*4*2#elotro
+    polys_groups_count = encoded_input.shape[0]//polys_groups_count
 
     input_size = encoded_input.shape[0]
     ris = np.empty((input_size,845,5), dtype=np.uint64)
+
+    cccp = 0
 
     for poly_group_index in range(polys_groups_count):
         for s_index in range(2):
             for q_index in range(len(q_list)):
                 temp_sum = q_index + (s_index*4) + (poly_group_index*2*4)
                 temp_sum = temp_sum / (polys_groups_count*2*4)
-                print(str(temp_sum*100)+"%")
-                for n_index in range(250): #elotro
-                    index = n_index + (q_index*250) + (s_index*4*250) + (poly_group_index*2*4*250)
+                temp_sum = round(temp_sum*1000)
+                print(str(temp_sum/10)+"%")
+                for n_index in range(4097): #elotro
+                    index = n_index + (q_index*4097) + (s_index*4*4097) + (poly_group_index*2*4*4097)
                     for j in range(5):
                         for k in range(13):
                             for l in range(13):
@@ -388,10 +392,19 @@ with tf.Session() as sess:
                                     for x_index in range(5):
                                         for y_index in range(5):
                                             temp_sum = temp_sum + encoded_input[index, k*2+x_index, l*2+y_index, t].item() * conv_kernel[x_index,y_index,j,t].item()
-                                            temp_sum = temp_sum % t_moduli[t]
-                                    temp_sum = temp_sum + conv_bias[j, t].item()
-                                    temp_sum = temp_sum % t_moduli[t]
+                                    if (n_index==0):
+                                        if (s_index==0):
+                                            if (cccp<4):
+                                                print(type(temp_sum))
+                                            temp_sum = temp_sum + ((conv_bias[j, t].item())*k_list[t][q_index])
+                                            if (cccp<4):
+                                                temp_sum = temp_sum % q_list[q_index]
+                                                print(type(temp_sum))
+                                            cccp = cccp + 1
+                                    temp_sum = temp_sum % q_list[q_index]
                                     ris[index, j + (l*5) + (k*65), t] = temp_sum
+
+    ris = decripta(ris)
 
     temp = np.load("./matrices/1_conv.npy")
     confronta(ris, temp)
