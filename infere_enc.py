@@ -9,59 +9,23 @@ from tensorflow.examples.tutorials.mnist import input_data
 from math import floor
 import tensorflow as tf
 
-from functools import reduce
+#from functools import reduce #probabilmente puo' essere cancellato
 
 
-import ctypes
+from wrapper import SEAL
 import numpy as np
 
-lib = ctypes.cdll.LoadLibrary('./SEAL/libseal.so')
-lib.initialize()
-lib.square.restype = ctypes.POINTER(ctypes.c_uint64)
-lib.encrypt_tensor.argtypes = [ctypes.POINTER(ctypes.c_uint64), ctypes.POINTER(ctypes.c_uint64), ctypes.c_int, ctypes.c_int, ctypes.c_int]
-lib.decrypt_tensor.argtypes = [ctypes.POINTER(ctypes.c_uint64), ctypes.POINTER(ctypes.c_uint64), ctypes.c_int, ctypes.c_int, ctypes.c_int]
-lib.k_list.argtypes = [ctypes.POINTER(ctypes.c_uint64)]
-q_list = [36028797014376449, 36028797013327873, 1152921504241942529, 1152921504369344513]
+SEALobj = SEAL()
+q_list = SEALobj.q_list
+k_list = SEALobj.k_list
+t_list = [40961, 65537, 114689, 147457, 188417]
+t_n = [208830439272397398017, 130520219464373862401, 74583470280817426433, 58009478173546659841, 45398788978896117761]
+t_prod = 8553903623036669820174337 # > 2**80
+t_mul_inv = [10665, 43884, 94414, 54859, 164822]
 
-#k_list = [3578163283476560, 5902913912171171, 256727058426082317, 114641959114678357]
-#per t=40961
-#k_list = [3578163283476560, 5902913912171171, 256727058426082317, 114641959114678357]
-#per t=188417
-#k_list = [23809558905221309, 3180918061091669, 313592054702576267, 922602767607469907]
-
-temp = (ctypes.c_uint64 * 20)()
-lib.k_list(temp)
-k_list = []
-for t in range(5):
-    temp2 = []
-    for k in range(4):
-        temp2.append(int(temp[(t*4)+k]))
-    k_list.append(temp2)
-temp = None
-temp2 = None
-
-def flatten(tensore):
-    dimensione = tensore.size
-    tensore.shape = (dimensione,)
-
-
-def confronta(tensoreA, tensoreB):
-    print("")
-    if (tensoreA.size!=tensoreB.size):
-        print("I due tensori hanno dimensioni diverse:")
-        print(tensoreA.shape)
-        print(tensoreB.shape)
-        return
-    flatten(tensoreA)
-    flatten(tensoreB)
-    confronto = (tensoreA==tensoreB)
-    for i in range(tensoreB.size):
-        if (not confronto[i]):
-            print("Differenza in i =", i)
-            print(tensoreA[i])
-            print(tensoreB[i])
-            return
-    print("Sono uguali!")
+#t_mul_inv = []
+#for t in range(5):
+#    t_mul_inv.append(mul_inv(t_n[t], t_list[t]))
 
 def oggetto(tensoreuint):
     shape = tensoreuint.shape
@@ -71,129 +35,6 @@ def oggetto(tensoreuint):
         new[i] = int(tensoreuint[i].item())
     new.shape = shape
     return new
-
-def cripta(input_array):
-    grado = 4096
-    shape = input_array.shape
-    shape_size = len(shape)
-    q = 4
-    assert shape[-1] == 5, "Errore in cripta: input_array deve avere size[-1] = 5"
-
-    #calcolo dimensioni
-    input_size = 1
-    output_size = 1
-    input_axis0_size = shape[0]
-    output_axis0_size = 1
-    data_size = 1
-
-    for i in range(shape_size):
-        input_size = input_size * shape[i]
-    data_size = input_size // input_axis0_size
-    divisione = input_axis0_size//grado
-    resto = input_axis0_size%grado
-    output_axis0_size = divisione * ((grado+1)*2*q)
-    if (resto!=0):
-        output_axis0_size = output_axis0_size + ((grado+1)*2*q)
-    output_size = output_axis0_size * data_size
-
-    #chiamata funzione
-    input_array.shape = (input_size,)
-    input_vec = (ctypes.c_uint64 * (input_size))()
-    for i in range(input_size):
-        input_vec[i] = input_array[i]
-    output_vec = (ctypes.c_uint64 * (output_size))()
-    data_size = data_size // 5 #adegua data size allo standard del wrap in c++
-    lib.encrypt_tensor(input_vec, output_vec, input_axis0_size, output_axis0_size, data_size)
-
-    #costruzione risultato
-    output_array = np.empty((output_size), dtype=np.uint64)
-    for i in range(output_size):
-        output_array[i] = output_vec[i]
-    shape = (output_axis0_size,) + shape[1:] #output shape
-    output_array.shape = shape
-    input_vec = None
-    output_vec = None
-    input_array = None
-    return output_array
-
-def decripta(input_array, output_axis0_size=10000):
-    grado = 4096
-    shape = input_array.shape
-    shape_size = len(shape)
-    q = 4
-    assert (shape[0]%((grado+1)*4*2)) == 0, "Errore in decripta: input_array ha size[0] inaspettato"
-    assert shape[-1] == 5, "Errore in decripta: input_array deve avere size[-1] = 5"
-
-    #calcolo dimensioni
-    input_size = 1
-    output_size = 1
-    input_axis0_size = shape[0]
-    output_axis0_size = output_axis0_size
-    data_size = 1
-
-    for i in range(shape_size):
-        input_size = input_size * shape[i]
-    data_size = input_size // input_axis0_size
-    output_size = output_axis0_size * data_size
-
-    #chiamata funzione
-    input_array.shape = (input_size,)
-    input_vec = (ctypes.c_uint64 * (input_size))()
-    for i in range(input_size):
-        input_vec[i] = input_array[i]
-    output_vec = (ctypes.c_uint64 * (output_size))()
-    data_size = data_size // 5 #adegua data size allo standard del wrap in c++
-    lib.decrypt_tensor(input_vec, output_vec, input_axis0_size, output_axis0_size, data_size)
-
-    #costruzione risultato
-    output_array = np.empty((output_size), dtype=np.uint64)
-    for i in range(output_size):
-        output_array[i] = output_vec[i]
-    shape = (output_axis0_size,) + shape[1:] #output shape
-    output_array.shape = shape
-    input_vec = None
-    output_vec = None
-    input_array = None
-    return output_array
-
-def alquadrato(input_array):
-    grado = 4096
-    shape = input_array.shape
-    shape_size = len(shape)
-    q = 4
-    assert (shape[0]%((grado+1)*4*2)) == 0, "Errore in decripta: input_array ha size[0] inaspettato"
-    assert shape[-1] == 5, "Errore in decripta: input_array deve avere size[-1] = 5"
-
-    #calcolo dimensioni
-    input_size = 1
-    input_axis0_size = shape[0]
-    data_size = 1
-
-    for i in range(shape_size):
-        input_size = input_size * shape[i]
-    data_size = input_size // input_axis0_size
-    output_size = input_size
-    output_axis0_size = input_axis0_size
-
-    #chiamata funzione
-    input_array.shape = (input_size,)
-    input_vec = (ctypes.c_uint64 * (input_size))()
-    for i in range(input_size):
-        input_vec[i] = input_array[i]
-    output_vec = (ctypes.c_uint64 * (output_size))()
-    data_size = data_size // 5 #adegua data size allo standard del wrap in c++
-    lib.square_tensor(input_vec, output_vec, input_axis0_size, output_axis0_size, data_size)
-
-    #costruzione risultato
-    output_array = np.empty((output_size), dtype=np.uint64)
-    for i in range(output_size):
-        output_array[i] = output_vec[i]
-    #shape = (output_axis0_size,) + shape[1:] #output shape
-    output_array.shape = shape
-    input_vec = None
-    output_vec = None
-    input_array = None
-    return output_array
 
 def chinese_remainder(array):
     risultato = 0
@@ -260,36 +101,50 @@ dense2_kernel = np.load("./matrices/dense2_kernel.npy")
 dense2_bias = np.load("./matrices/dense2_bias.npy")
 conv_kernel = np.load("./matrices/conv_kernel.npy")
 conv_bias = np.load("./matrices/conv_bias.npy")
-t_moduli = [40961, 65537, 114689, 147457, 188417]
-t_n = [208830439272397398017, 130520219464373862401, 74583470280817426433, 58009478173546659841, 45398788978896117761]
-t_prod = 8553903623036669820174337
-t_mul_inv = []
-for t in range(5):
-    t_mul_inv.append(mul_inv(t_n[t], t_moduli[t]))
+
 
 with tf.Session() as sess:
     saver.restore(sess, './nn_data/net-1')
     input_size = encoded_input.shape[0]
 
-    #convoluzione + flatten
     if False: #ELOTRO
         print("Calculation of the convolution layer:")
+
+        #convoluzione + flatten CRIPTATI
+        encoded_input = cripta(encoded_input)
+        poly_groups_count = 4097*4*2
+        poly_groups_count = encoded_input.shape[0]//poly_groups_count
+
+        input_size = encoded_input.shape[0]
         ris = np.empty((input_size,845,5), dtype=np.uint64)
-        for i in range(input_size):
-            if ((i%1000)==0):
-                print(str(i/100)+"%")
-            for j in range(5):
-                for k in range(13):
-                    for l in range(13):
-                        for t in range(5):
-                            temp_sum = 0
-                            for x_index in range(5):
-                                for y_index in range(5):
-                                    temp_sum = temp_sum + encoded_input[i, k*2+x_index, l*2+y_index, t].item() * conv_kernel[x_index,y_index,j,t].item()
-                                    temp_sum = temp_sum % t_moduli[t]
-                            temp_sum = temp_sum + conv_bias[j, t].item()
-                            temp_sum = temp_sum % t_moduli[t]
-                            ris[i, j + (l*5) + (k*65), t] = temp_sum
+
+        for poly_group_index in range(poly_groups_count):
+            for s_index in range(2):
+                for q_index in range(len(q_list)):
+                    temp_sum = q_index + (s_index*4) + (poly_group_index*2*4)
+                    temp_sum = temp_sum / (poly_groups_count*2*4)
+                    temp_sum = round(temp_sum*1000)
+                    print(str(temp_sum/10)+"%")
+                    for n_index in range(4097): #elotro
+                        index = n_index + (q_index*4097) + (s_index*4*4097) + (poly_group_index*2*4*4097)
+                        for j in range(5):
+                            for k in range(13):
+                                for l in range(13):
+                                    for t in range(5):
+                                        temp_sum = 0
+                                        for x_index in range(5):
+                                            for y_index in range(5):
+                                                temp_sum = temp_sum + encoded_input[index, k*2+x_index, l*2+y_index, t].item() * conv_kernel[x_index,y_index,j,t].item()
+                                        if (n_index==0):
+                                            if (s_index==0):
+                                                temp_sum = temp_sum + ((conv_bias[j, t].item())*k_list[t][q_index])
+                                        temp_sum = temp_sum % q_list[q_index]
+                                        ris[index, j + (l*5) + (k*65), t] = temp_sum
+
+        ris = decripta(ris)
+
+        temp = np.load("./matrices/1_conv.npy")
+        confronta(ris, temp)
 
         print("100%")
         print("Calculation of the remaining layers")
@@ -297,27 +152,23 @@ with tf.Session() as sess:
         #funzione attivazione1: al quadrato
         ris = ris*ris
         for t in range(5):
-            ris[...,t] = ris[...,t] % t_moduli[t]
-
-        #ris = np.empty((input_size,845,5), dtype=np.uint64)
+            ris[...,t] = ris[...,t] % t_list[t]
 
         #fully connected layer 1
         temp = np.empty((input_size,100,5), dtype=np.uint64)
         for t in range(5):
-            temp[...,t] = ris[...,t].dot(dense1_kernel[...,t]) % t_moduli[t]
-            temp[...,t] = temp[...,t] + dense1_bias[...,t] % t_moduli[t]
+            temp[...,t] = ris[...,t].dot(dense1_kernel[...,t]) % t_list[t]
+            temp[...,t] = temp[...,t] + dense1_bias[...,t] % t_list[t]
         ris = temp
         temp = None
 
         # square layer 2 CRIPTATO
         ris = np.load("./matrices/3_1_dense1_bias.npy")
-        ris = cripta(ris)
-        ris = oggetto(ris)
-        ris = alquadrato(ris)
-        ris = decripta(ris, 10000)
-
+        ris = SEALobj.encrypt_tensor(ris)
+        ris = SEALobj.square_tensor(ris)
+        ris = SEALobj.decrypt_tensor(ris, 10000)
         temp = np.load("./matrices/4_attivazione2.npy")
-        confronta(ris, temp)
+        SEALobj.check(ris, temp)
 
         # fully connected layer 2 CRIPTATO
         ris = np.load("./matrices/4_attivazione2.npy")
@@ -334,12 +185,12 @@ with tf.Session() as sess:
         temp = None
 
         ## % q
-        polys_groups_count = 4097*4*2
-        polys_groups_count = ris.shape[0]//polys_groups_count
+        poly_groups_count = 4097*4*2
+        poly_groups_count = ris.shape[0]//poly_groups_count
 
         for axis1 in range(ris.shape[1]):
             for axis2 in range(ris.shape[2]):
-                for gdp in range(polys_groups_count):
+                for gdp in range(poly_groups_count):
                     for size_index in range(2):
                         for q_index in range(4):
                             for n_index in range(4097):
@@ -351,7 +202,7 @@ with tf.Session() as sess:
         ## bias
         for axis1 in range(ris.shape[1]):
             for axis2 in range(ris.shape[2]):
-                for gdp in range(polys_groups_count):
+                for gdp in range(poly_groups_count):
                     for q_index in range(4):
                         axis0 = gdp*4097*4*2 + (4097*q_index)
                         temp = ris[axis0,axis1,axis2]
@@ -364,53 +215,8 @@ with tf.Session() as sess:
         temp = np.load("./matrices/5_1_dense2_bias.npy")
         confronta(ris, temp)
 
-    #convoluzione + flatten CRIPTATI TEST
-    encoded_input = cripta(encoded_input)
-    polys_groups_count = 4097*4*2
-    #polys_groups_count = 250*4*2#elotro
-    polys_groups_count = encoded_input.shape[0]//polys_groups_count
-
-    input_size = encoded_input.shape[0]
-    ris = np.empty((input_size,845,5), dtype=np.uint64)
-
-    cccp = 0
-
-    for poly_group_index in range(polys_groups_count):
-        for s_index in range(2):
-            for q_index in range(len(q_list)):
-                temp_sum = q_index + (s_index*4) + (poly_group_index*2*4)
-                temp_sum = temp_sum / (polys_groups_count*2*4)
-                temp_sum = round(temp_sum*1000)
-                print(str(temp_sum/10)+"%")
-                for n_index in range(4097): #elotro
-                    index = n_index + (q_index*4097) + (s_index*4*4097) + (poly_group_index*2*4*4097)
-                    for j in range(5):
-                        for k in range(13):
-                            for l in range(13):
-                                for t in range(5):
-                                    temp_sum = 0
-                                    for x_index in range(5):
-                                        for y_index in range(5):
-                                            temp_sum = temp_sum + encoded_input[index, k*2+x_index, l*2+y_index, t].item() * conv_kernel[x_index,y_index,j,t].item()
-                                    if (n_index==0):
-                                        if (s_index==0):
-                                            if (cccp<4):
-                                                print(type(temp_sum))
-                                            temp_sum = temp_sum + ((conv_bias[j, t].item())*k_list[t][q_index])
-                                            if (cccp<4):
-                                                temp_sum = temp_sum % q_list[q_index]
-                                                print(type(temp_sum))
-                                            cccp = cccp + 1
-                                    temp_sum = temp_sum % q_list[q_index]
-                                    ris[index, j + (l*5) + (k*65), t] = temp_sum
-
-    ris = decripta(ris)
-
-    temp = np.load("./matrices/1_conv.npy")
-    confronta(ris, temp)
-
     #FINE TESTS
-    lib.deallocate()
+    SEALobj.deallocate()
     exit()
     print("waiting...")
 
