@@ -12,8 +12,8 @@ import tensorflow as tf
 t_list = [40961, 65537, 114689, 147457, 188417]
 learning_rate = 0.001
 
-x = tf.placeholder("float", [None, 784]) # mnist data image of shape 28*28=784
-y = tf.placeholder("float", [None, 10]) # 0-9 digits recognition => 10 classes
+x = tf.placeholder("float", [None, 784])
+y = tf.placeholder("float", [None, 10])
 
 paddings = tf.constant([[0, 0], [1, 0,], [1, 0]])
 input_layer = tf.reshape(x, [-1, 28, 28])

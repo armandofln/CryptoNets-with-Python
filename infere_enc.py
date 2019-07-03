@@ -56,21 +56,14 @@ mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
 # Set parameters
 learning_rate = 0.001
-training_epochs = 1#30
-batch_size = 100
-display_step = 2
 
-
-x = tf.placeholder("float", [None, 784]) # mnist data image of shape 28*28=784
-y = tf.placeholder("float", [None, 10]) # 0-9 digits recognition => 10 classes
+x = tf.placeholder("float", [None, 784])
+y = tf.placeholder("float", [None, 10])
 
 paddings = tf.constant([[0, 0], [1, 0,], [1, 0]])
 input_layer = tf.reshape(x, [-1, 28, 28])
 input_layer = tf.pad(input_layer, paddings, "CONSTANT") 
 input_layer = tf.reshape(input_layer, [-1, 29, 29, 1])
-
-# Input Tensor Shape: [batch_size, 29, 29, 1]
-# Output Tensor Shape: [batch_size, 13, 13, 5]
 
 conv = tf.layers.conv2d(
     inputs=input_layer,
