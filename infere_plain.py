@@ -65,7 +65,7 @@ train = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
 saver = tf.train.Saver()
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
-encoded_input = np.load("./output_data/encoded_input.npy")
+encoded_input = np.load("./output_data/plain_layer_0.npy")
 dense1_kernel = np.load("./nn_data/dense1_kernel.npy")
 dense1_bias = np.load("./nn_data/dense1_bias.npy")
 dense2_kernel = np.load("./nn_data/dense2_kernel.npy")
@@ -77,92 +77,80 @@ with tf.Session() as sess:
     saver.restore(sess, './nn_data/net-1')
     input_size = encoded_input.shape[0]
 
-    if False: #ELOTRO
-        # LAYER 1: convolution + flatten
-        print("Calculation of the convolution layer:")
-        ris = np.empty((input_size,845,5), dtype=np.uint64)
-        for i in range(input_size):
-            if ((i%1000)==0):
-                print(str(i/100)+"%")
-            for j in range(5):
-                for k in range(13):
-                    for l in range(13):
-                        for t in range(5):
-                            temp_sum = 0
-                            for x_index in range(5):
-                                for y_index in range(5):
-                                    temp_sum = temp_sum + encoded_input[i, k*2+x_index, l*2+y_index, t].item() * conv_kernel[x_index,y_index,j,t].item()
-                                    temp_sum = temp_sum % t_list[t]
-                            temp_sum = temp_sum + conv_bias[j, t].item()
-                            temp_sum = temp_sum % t_list[t]
-                            ris[i, j + (l*5) + (k*65), t] = temp_sum 
-        print("100%")
-        print("Calculation of the remaining layers")
+    # LAYER 1: convolution + flatten
+    print("Calculation of the convolution layer:")
+    ris = np.empty((input_size,845,5), dtype=np.uint64)
+    for i in range(input_size):
+        if ((i%1000)==0):
+            print(str(i/100)+"%")
+        for j in range(5):
+            for k in range(13):
+                for l in range(13):
+                    for t in range(5):
+                        temp_sum = 0
+                        for x_index in range(5):
+                            for y_index in range(5):
+                                temp_sum = temp_sum + encoded_input[i, k*2+x_index, l*2+y_index, t].item() * conv_kernel[x_index,y_index,j,t].item()
+                                temp_sum = temp_sum % t_list[t]
+                        temp_sum = temp_sum + conv_bias[j, t].item()
+                        temp_sum = temp_sum % t_list[t]
+                        ris[i, j + (l*5) + (k*65), t] = temp_sum 
+    encoded_input = None
+    print("100%")
+    print("Calculation of the remaining layers")
 
-        print("layer 1 type =", type(ris), type(ris[0,0,0]))
-        np.save("./output_data/plain_layer_1", ris)
+    np.save("./output_data/plain_layer_1", ris)
 
-        
-        # LAYER 2: square activation function
-        ris = ris*ris
-        for t in range(5):
-            ris[...,t] = ris[...,t] % t_list[t]
+    
+    # LAYER 2: square activation function
+    ris = ris*ris
+    for t in range(5):
+        ris[...,t] = ris[...,t] % t_list[t]
 
-        print("layer 2 type =", type(ris), type(ris[0,0,0]))
-        np.save("./output_data/plain_layer_2", ris)
+    np.save("./output_data/plain_layer_2", ris)
 
-        # LAYER 3: fully connected layer
-        #
-        # Usually using the numpy.dot() function results in changing the dtype from uint64 to float64. So we should use dtype=object insted,
-        # with the pythong integer object. But we always have small numbers: all of them are less then t_list[4] = 188417 < 4503599627370496 = 2**52.
-        # So they can fit in the 52 bits mantissa of the float64 type. This allows us to NOT use dtype=objecy, which is slower.
-        temp = np.empty((input_size,100,5), dtype=np.uint64)
-        for t in range(5):
-            temp[...,t] = ris[...,t].dot(dense1_kernel[...,t]) % t_list[t]
-            temp[...,t] = temp[...,t] + dense1_bias[...,t] % t_list[t]
-        ris = temp
-        temp = None
+    # LAYER 3: fully connected layer
+    temp = np.empty((input_size,100,5), dtype=np.uint64)
+    for t in range(5):
+        temp[...,t] = ris[...,t].dot(dense1_kernel[...,t]) % t_list[t]
+        temp[...,t] = temp[...,t] + dense1_bias[...,t] % t_list[t]
+    ris = temp
+    temp = None
 
-        print("layer 3 type =", type(ris), type(ris[0,0,0]))
-        np.save("./output_data/plain_layer_3", ris)
+    np.save("./output_data/plain_layer_3", ris)
 
-        # LAYER 4: square activation function
-        ris = ris*ris
-        for t in range(5):
-            ris[...,t] = ris[...,t] % t_list[t]
+    # LAYER 4: square activation function
+    ris = ris*ris
+    for t in range(5):
+        ris[...,t] = ris[...,t] % t_list[t]
 
-        print("layer 4 type =", type(ris), type(ris[0,0,0]))
-        np.save("./output_data/plain_layer_4", ris)
+    np.save("./output_data/plain_layer_4", ris)
 
-        # LAYER 5: fully connected layer
-        temp = np.empty((input_size,10,5), dtype=np.uint64)
-        for t in range(5):
-            temp[...,t] = ris[...,t].dot(dense2_kernel[...,t]) % t_list[t]
-            temp[...,t] = temp[...,t] + dense2_bias[...,t] % t_list[t]
-        ris = temp
-        temp = None
+    # LAYER 5: fully connected layer
+    temp = np.empty((input_size,10,5), dtype=np.uint64)
+    for t in range(5):
+        temp[...,t] = ris[...,t].dot(dense2_kernel[...,t]) % t_list[t]
+        temp[...,t] = temp[...,t] + dense2_bias[...,t] % t_list[t]
+    ris = temp
+    temp = None
 
-        print("layer 5 type =", type(ris), type(ris[0,0,0]))
-        np.save("./output_data/plain_layer_5", ris)
+    np.save("./output_data/plain_layer_5", ris)
 
-        # CTR INVERSE
-        negative_threshold = t_prod // 2
-        temp = np.empty((input_size,10), dtype=object)
-        for i in range(input_size):
-            for j in range(10):
-                temp[i, j] = chinese_remainder(ris[i, j, :])
-                if (temp[i, j]>negative_threshold):
-                    temp[i, j] = temp[i, j] - t_prod
-        ris = temp
-        temp = None
+    # CTR INVERSE
+    negative_threshold = t_prod // 2
+    temp = np.empty((input_size,10), dtype=object)
+    for i in range(input_size):
+        for j in range(10):
+            temp[i, j] = chinese_remainder(ris[i, j, :])
+            if (temp[i, j]>negative_threshold):
+                temp[i, j] = temp[i, j] - t_prod
+    ris = temp
+    temp = None
 
-        # COMPUTE PREDICTIONS
-        ris = np.argmax(ris, axis=1)
+    # COMPUTE PREDICTIONS
+    ris = np.argmax(ris, axis=1)
 
-        print("final_predictions type =", type(ris), type(ris[0]))
-        np.save("./output_data/final_predictions", ris)
-
-    ris = np.load("./matrices/6_argmax.npy")
+    np.save("./output_data/final_predictions", ris)
 
     # COMPUTE FINAL OUTPUT AND PRINT IT
     tf_predictions = tf.equal(tf.argmax(model, 1), tf.argmax(y, 1))
@@ -179,4 +167,4 @@ with tf.Session() as sess:
 
     print("Accuracy with tensorflow (no CRT):", tf_accuracy.eval({x: mnist.test.images, y: mnist.test.labels}))
     print("Accuracy with only numpy and CRT: ", crt_accuracy.eval({x: mnist.test.images, y: mnist.test.labels}))
-    print("Number of swapped predictions: ", c)
+    print("Number of swapped predictions: ", swapped_predictions_count)
