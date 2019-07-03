@@ -1,3 +1,7 @@
+
+# Training of a Neural Network with 5 layer. Only sum and product operations allowed.
+# Store the Neural Network in the ./nn_data/ folder.
+
 import sys
 import numpy as np
 from tensorflow.examples.tutorials.mnist import input_data

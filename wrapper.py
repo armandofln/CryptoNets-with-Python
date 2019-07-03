@@ -1,3 +1,8 @@
+
+# A wrapper for the SEAL library. The wrapper can support basic operations such as
+# encoding, decoding and squaring, as mush as initializing variables, genereting new keys
+# and freeing memory.
+
 import ctypes
 import numpy as np
 import os.path

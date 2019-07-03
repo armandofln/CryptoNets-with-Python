@@ -1,7 +1,6 @@
 
-# INFERENZA con numpy e numeri interi
-# CON CTR
-# CONTRONTA CON CTR E SENZA CTR
+# Inference with NumPy and integers. Use of the Chinese Remainder Theorem to encode large numbers.
+# Comparison with floating point numbers in TensorFlow to check the loss of accuracy.
 
 import sys
 import numpy as np
@@ -9,8 +8,15 @@ from tensorflow.examples.tutorials.mnist import input_data
 from math import floor
 import tensorflow as tf
 
+t_list = [40961, 65537, 114689, 147457, 188417]
+t_n = [208830439272397398017, 130520219464373862401, 74583470280817426433, 58009478173546659841, 45398788978896117761]
+t_prod = 8553903623036669820174337 # > 2**80
+t_mul_inv = [10665, 43884, 94414, 54859, 164822]
 
-from functools import reduce
+#t_mul_inv = []
+#for t in range(5):
+#    t_mul_inv.append(mul_inv(t_n[t], t_list[t]))
+
 def chinese_remainder(array):
     risultato = 0
     for t in range(5):
@@ -28,15 +34,8 @@ def mul_inv(a, b):
     if x1 < 0: x1 += b0
     return x1
 
-
-mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
-
 # Set parameters
 learning_rate = 0.001
-training_epochs = 1#30
-batch_size = 100
-display_step = 2
-
 
 x = tf.placeholder("float", [None, 784]) # mnist data image of shape 28*28=784
 y = tf.placeholder("float", [None, 10]) # 0-9 digits recognition => 10 classes
@@ -46,9 +45,6 @@ input_layer = tf.reshape(x, [-1, 28, 28])
 input_layer = tf.pad(input_layer, paddings, "CONSTANT") 
 input_layer = tf.reshape(input_layer, [-1, 29, 29, 1])
 
-# Input Tensor Shape: [batch_size, 29, 29, 1]
-# Output Tensor Shape: [batch_size, 13, 13, 5]
-
 conv = tf.layers.conv2d(
     inputs=input_layer,
     filters=5,
@@ -57,7 +53,6 @@ conv = tf.layers.conv2d(
     padding="valid",
     activation=None,
     name='convolution')
-
 flat = tf.contrib.layers.flatten(conv)
 square1 = flat*flat
 pool = tf.layers.dense(square1, units = 100, name='dense1')
@@ -68,27 +63,22 @@ loss = tf.reduce_sum((y-model)*(y-model))
 train = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
 
 saver = tf.train.Saver()
+mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
-encoded_input = np.load("./matrices/encoded_input.npy")
-dense1_kernel = np.load("./matrices/dense1_kernel.npy")
-dense1_bias = np.load("./matrices/dense1_bias.npy")
-dense2_kernel = np.load("./matrices/dense2_kernel.npy")
-dense2_bias = np.load("./matrices/dense2_bias.npy")
-conv_kernel = np.load("./matrices/conv_kernel.npy")
-conv_bias = np.load("./matrices/conv_bias.npy")
-t_moduli = [40961, 65537, 114689, 147457, 188417]
-t_n = [208830439272397398017, 130520219464373862401, 74583470280817426433, 58009478173546659841, 45398788978896117761]
-t_prod = 8553903623036669820174337
-t_mul_inv = []
-for t in range(5):
-    t_mul_inv.append(mul_inv(t_n[t], t_moduli[t]))
+encoded_input = np.load("./output_data/encoded_input.npy")
+dense1_kernel = np.load("./nn_data/dense1_kernel.npy")
+dense1_bias = np.load("./nn_data/dense1_bias.npy")
+dense2_kernel = np.load("./nn_data/dense2_kernel.npy")
+dense2_bias = np.load("./nn_data/dense2_bias.npy")
+conv_kernel = np.load("./nn_data/conv_kernel.npy")
+conv_bias = np.load("./nn_data/conv_bias.npy")
 
 with tf.Session() as sess:
     saver.restore(sess, './nn_data/net-1')
     input_size = encoded_input.shape[0]
 
-    #convoluzione + flatten
     if False: #ELOTRO
+        # LAYER 1: convolution + flatten
         print("Calculation of the convolution layer:")
         ris = np.empty((input_size,845,5), dtype=np.uint64)
         for i in range(input_size):
@@ -102,98 +92,91 @@ with tf.Session() as sess:
                             for x_index in range(5):
                                 for y_index in range(5):
                                     temp_sum = temp_sum + encoded_input[i, k*2+x_index, l*2+y_index, t].item() * conv_kernel[x_index,y_index,j,t].item()
-                                    temp_sum = temp_sum % t_moduli[t]
+                                    temp_sum = temp_sum % t_list[t]
                             temp_sum = temp_sum + conv_bias[j, t].item()
-                            temp_sum = temp_sum % t_moduli[t]
+                            temp_sum = temp_sum % t_list[t]
                             ris[i, j + (l*5) + (k*65), t] = temp_sum 
-
         print("100%")
         print("Calculation of the remaining layers")
 
-        #funzione attivazione: al quadrato
+        print("layer 1 type =", type(ris), type(ris[0,0,0]))
+        np.save("./output_data/plain_layer_1", ris)
+
+        
+        # LAYER 2: square activation function
         ris = ris*ris
         for t in range(5):
-            ris[...,t] = ris[...,t] % t_moduli[t]
+            ris[...,t] = ris[...,t] % t_list[t]
 
-        #ris = np.empty((input_size,845,5), dtype=np.uint64)
+        print("layer 2 type =", type(ris), type(ris[0,0,0]))
+        np.save("./output_data/plain_layer_2", ris)
 
-        #fully connected layer 1
+        # LAYER 3: fully connected layer
+        #
+        # Usually using the numpy.dot() function results in changing the dtype from uint64 to float64. So we should use dtype=object insted,
+        # with the pythong integer object. But we always have small numbers: all of them are less then t_list[4] = 188417 < 4503599627370496 = 2**52.
+        # So they can fit in the 52 bits mantissa of the float64 type. This allows us to NOT use dtype=objecy, which is slower.
         temp = np.empty((input_size,100,5), dtype=np.uint64)
         for t in range(5):
-            temp[...,t] = ris[...,t].dot(dense1_kernel[...,t]) % t_moduli[t]
-            temp[...,t] = temp[...,t] + dense1_bias[...,t] % t_moduli[t]
+            temp[...,t] = ris[...,t].dot(dense1_kernel[...,t]) % t_list[t]
+            temp[...,t] = temp[...,t] + dense1_bias[...,t] % t_list[t]
         ris = temp
         temp = None
 
-        #funzione attivazione: al quadrato
+        print("layer 3 type =", type(ris), type(ris[0,0,0]))
+        np.save("./output_data/plain_layer_3", ris)
+
+        # LAYER 4: square activation function
         ris = ris*ris
         for t in range(5):
-            ris[...,t] = ris[...,t] % t_moduli[t]
+            ris[...,t] = ris[...,t] % t_list[t]
 
-        #fully connected layer 2
+        print("layer 4 type =", type(ris), type(ris[0,0,0]))
+        np.save("./output_data/plain_layer_4", ris)
+
+        # LAYER 5: fully connected layer
         temp = np.empty((input_size,10,5), dtype=np.uint64)
         for t in range(5):
-            temp[...,t] = ris[...,t].dot(dense2_kernel[...,t]) % t_moduli[t]
-            temp[...,t] = temp[...,t] + dense2_bias[...,t] % t_moduli[t]
+            temp[...,t] = ris[...,t].dot(dense2_kernel[...,t]) % t_list[t]
+            temp[...,t] = temp[...,t] + dense2_bias[...,t] % t_list[t]
         ris = temp
         temp = None
 
-        #tests
-        ris = np.load("./matrices/5_0_dense2_kernel.npy")
+        print("layer 5 type =", type(ris), type(ris[0,0,0]))
+        np.save("./output_data/plain_layer_5", ris)
 
-        for t in range(5):
-            ris[...,t] = ris[...,t] + dense2_bias[...,t] % t_moduli[t]
+        # CTR INVERSE
+        negative_threshold = t_prod // 2
+        temp = np.empty((input_size,10), dtype=object)
+        for i in range(input_size):
+            for j in range(10):
+                temp[i, j] = chinese_remainder(ris[i, j, :])
+                if (temp[i, j]>negative_threshold):
+                    temp[i, j] = temp[i, j] - t_prod
+        ris = temp
+        temp = None
 
-    ris = np.load("./matrices/5_1_dense2_bias.npy")
+        # COMPUTE PREDICTIONS
+        ris = np.argmax(ris, axis=1)
 
-    #temp = (temp==ris)
+        print("final_predictions type =", type(ris), type(ris[0]))
+        np.save("./output_data/final_predictions", ris)
 
+    ris = np.load("./matrices/6_argmax.npy")
 
-#    for i in range(10000):
-#        for j in range(10):
-#            for k in range(5):
-#                if (not temp[i,j,k]):
-#                    print("falso")
-#                    exit()
+    # COMPUTE FINAL OUTPUT AND PRINT IT
+    tf_predictions = tf.equal(tf.argmax(model, 1), tf.argmax(y, 1))
+    tf_predictions = tf_predictions.eval({x: mnist.test.images, y: mnist.test.labels})
+    tf_accuracy = tf.reduce_mean(tf.cast(tf_predictions, "float"))
+    crt_predictions = tf.equal(ris, tf.argmax(y, 1))
+    crt_predictions = crt_predictions.eval({y: mnist.test.labels})
+    crt_accuracy = tf.reduce_mean(tf.cast(crt_predictions, "float"))
 
-    print("Fine")
-    exit()
-    print("waiting...")
+    swapped_predictions_count = 0
+    for i in range(tf_predictions.size):
+        if (tf_predictions[i]!=crt_predictions[i]):
+            swapped_predictions_count = swapped_predictions_count + 1
 
-    #fine tests
-    #ris = np.load("./matrices/5_1_dense2_bias.npy")
-
-    #CTR INVERSE
-    negative_threshold = t_prod // 2
-    temp = np.empty((input_size,10), dtype=object)
-    for i in range(input_size):
-        for j in range(10):
-            temp[i, j] = chinese_remainder(ris[i, j, :])
-            if (temp[i, j]>negative_threshold):
-                temp[i, j] = temp[i, j] - t_prod
-    ris = temp
-    temp = None
-
-    np.save("./matrices/5_2_decoded.npy", ris)
-
-    #trasforma in predizione
-    ris = np.argmax(ris, axis=1)
-    np.save("./matrices/6_argmax.npy", ris)
-
-
-    #test sugli output e stampa
-    predictions = tf.equal(tf.argmax(model, 1), tf.argmax(y, 1))
-    accuracy = tf.reduce_mean(tf.cast(predictions, "float"))
-    predictions2 = tf.equal(ris, tf.argmax(y, 1))
-    accuracy2 = tf.reduce_mean(tf.cast(predictions2, "float"))
-    abla1 = predictions.eval({x: mnist.test.images, y: mnist.test.labels})
-    abla2 = predictions2.eval({y: mnist.test.labels})
-
-    c = 0
-    for i in range(len(abla1)):
-        if (abla1[i]!=abla2[i]):
-            c = c + 1
-
-    print("Numero esatto di predizioni invertite: ", c)
-    print("Accuracy:", accuracy.eval({x: mnist.test.images, y: mnist.test.labels}))
-    print("Accuracy without tensorflow:", accuracy2.eval({x: mnist.test.images, y: mnist.test.labels}))
+    print("Accuracy with tensorflow (no CRT):", tf_accuracy.eval({x: mnist.test.images, y: mnist.test.labels}))
+    print("Accuracy with only numpy and CRT: ", crt_accuracy.eval({x: mnist.test.images, y: mnist.test.labels}))
+    print("Number of swapped predictions: ", c)

@@ -10,6 +10,6 @@ In ./:
 
 g++ -std=c++11 -I SEAL -L SEAL/bin -fPIC -shared wrapper.cpp -o SEAL/libseal.so -lseal
 
-python wrapper.py 
+python3 wrapper.py 
 
 

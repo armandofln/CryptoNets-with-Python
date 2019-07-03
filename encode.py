@@ -1,6 +1,7 @@
 
-# ENCODING con numpy e numeri interi
-# esegue solo un salvataggio dei numpy ricavati da tensorflow
+# Encoding of the Neural Networks weights and the input data. Here encoding stands for
+# converting float number n to int((n * precision) % t), where t are the plain modulus
+# parameters in the SEAL library.
 
 import sys
 import numpy as np
@@ -65,35 +66,35 @@ conv_kernel = np.empty(shape=(5,5,5,5), dtype=np.uint64)
 conv_bias = np.empty(shape=(5,5), dtype=np.uint64)
 
 print("Weights processing...")
-precisione = 100
+precision = 100
 for i in range(845):
     for j in range(100):
-        temp = round(dense1_kernel_[i, j]*precisione)
+        value = round(dense1_kernel_[i, j].item()*precision)
         for t in range(5):
-            dense1_kernel[i, j, t] = temp % t_list[t]
+            dense1_kernel[i, j, t] = value % t_list[t]
 for i in range(100):
     for j in range(10):
-        temp = round(dense2_kernel_[i, j]*precisione)
+        value = round(dense2_kernel_[i, j].item()*precision)
         for t in range(5):
-            dense2_kernel[i, j, t] = temp % t_list[t]
+            dense2_kernel[i, j, t] = value % t_list[t]
 for i in range(100):
-    temp = round(dense1_bias_[i]*precisione)
+    value = round(dense1_bias_[i].item()*precision)
     for t in range(5):
-        dense1_bias[i, t] = temp % t_list[t]
+        dense1_bias[i, t] = value % t_list[t]
 for i in range(10):
-    temp = round(dense2_bias_[i]*precisione)
+    value = round(dense2_bias_[i].item()*precision)
     for t in range(5):
-        dense2_bias[i, t] = temp % t_list[t]
+        dense2_bias[i, t] = value % t_list[t]
 for i in range(5):
-    temp = round(conv_bias_[i]*precisione)
+    value = round(conv_bias_[i].item()*precision)
     for t in range(5):
-        conv_bias[i, t] = temp % t_list[t]
+        conv_bias[i, t] = value % t_list[t]
 for i in range(5):
     for j in range(5):
         for k in range(5):
-            temp = round(conv_kernel_[i, j, 0, k]*precisione)
+            value = round(conv_kernel_[i, j, 0, k].item()*precision)
             for t in range(5):
-                conv_kernel[i, j, k, t] = temp % t_list[t]
+                conv_kernel[i, j, k, t] = value % t_list[t]
 print("Done.")
 
 
@@ -101,9 +102,9 @@ print("Input processing...")
 for i in range(input_size):
     for j in range(29):
         for k in range(29):
-            temp = round(encoded_input_[i,j,k,0]*precisione)
+            value = round(encoded_input_[i,j,k,0].item()*precision)
             for t in range(5):
-                encoded_input[i,j,k,t] = temp % t_list[t]
+                encoded_input[i,j,k,t] = value % t_list[t]
             
 print("Done.")
 

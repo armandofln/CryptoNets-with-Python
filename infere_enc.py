@@ -1,7 +1,5 @@
 
-# INFERENZA con numpy e numeri interi
-# CON CTR
-# CONTRONTA CON CTR E SENZA CTR
+# Infere whithin the encrypted polynomials space.
 
 import sys
 import numpy as np
