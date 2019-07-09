@@ -64,6 +64,7 @@ def crt_inverse(tensor):
 	return temp
 
 
+
 # CRT PARAMETERS
 # compute the producte of all t, and the threshold for negative numbers:
 #   t_product
@@ -81,6 +82,7 @@ for t_index in range(len(t_list)):
 	t_product_over_t.append(t_product // t_list[t_index])
 	temp = extended_Euclidean_algorithm(t_product_over_t[t_index], t_list[t_index])
 	bezout_coefficients.append(temp)
+
 
 
 # COMPUTE PREDICTIONS
@@ -110,22 +112,22 @@ else:
 predictions = np.argmax(predictions, axis=1)
 
 
+
 # PRINT ACCURACIES
 with tf.Session() as sess:
-    saver.restore(sess, './nn_data/net-1')
-    tf_predictions = tf.equal(tf.argmax(model, 1), tf.argmax(y, 1))
-    tf_predictions = tf_predictions.eval({x: mnist.test.images, y: mnist.test.labels})
-    tf_accuracy = tf.reduce_mean(tf.cast(tf_predictions, "float"))
-    integer_predictions = tf.equal(predictions, tf.argmax(y, 1))
-    integer_predictions = integer_predictions.eval({y: mnist.test.labels})
-    integer_accuracy = tf.reduce_mean(tf.cast(integer_predictions, "float"))
+	saver.restore(sess, './nn_data/net-1')
+	tf_predictions = tf.equal(tf.argmax(model, 1), tf.argmax(y, 1))
+	tf_predictions = tf_predictions.eval({x: mnist.test.images, y: mnist.test.labels})
+	tf_accuracy = tf.reduce_mean(tf.cast(tf_predictions, "float"))
+	integer_predictions = tf.equal(predictions, tf.argmax(y, 1))
+	integer_predictions = integer_predictions.eval({y: mnist.test.labels})
+	integer_accuracy = tf.reduce_mean(tf.cast(integer_predictions, "float"))
 
-    swapped_predictions_count = 0
-    for i in range(tf_predictions.size):
-        if (tf_predictions[i]!=integer_predictions[i]):
-            swapped_predictions_count = swapped_predictions_count + 1
+	swapped_predictions_count = 0
+	for i in range(tf_predictions.size):
+		if (tf_predictions[i]!=integer_predictions[i]):
+			swapped_predictions_count = swapped_predictions_count + 1
 
-    print("Accuracy with tensorflow and no CRT:", tf_accuracy.eval({x: mnist.test.images, y: mnist.test.labels}))
-    print(string, integer_accuracy.eval({x: mnist.test.images, y: mnist.test.labels}))
-    print("Number of swapped predictions: ", swapped_predictions_count)
-
+	print("Accuracy with tensorflow and no CRT:", tf_accuracy.eval({x: mnist.test.images, y: mnist.test.labels}))
+	print(string, integer_accuracy.eval({x: mnist.test.images, y: mnist.test.labels}))
+	print("Number of swapped predictions: ", swapped_predictions_count)

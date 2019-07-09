@@ -1,249 +1,176 @@
 
 # Infere whithin the encrypted polynomials space.
 
-import sys
 import numpy as np
-from tensorflow.examples.tutorials.mnist import input_data
-from math import floor
-import tensorflow as tf
-
-#from functools import reduce #probabilmente puo' essere cancellato
-
-
 from wrapper import SEAL
-import numpy as np
 
 SEALobj = SEAL()
 q_list = SEALobj.q_list
 k_list = SEALobj.k_list
-t_list = [40961, 65537, 114689, 147457, 188417]
-t_n = [208830439272397398017, 130520219464373862401, 74583470280817426433, 58009478173546659841, 45398788978896117761]
-t_prod = 8553903623036669820174337 # > 2**80
-t_mul_inv = [10665, 43884, 94414, 54859, 164822]
+n_parm = SEALobj.n_parm
+enc_poly_size = SEALobj.enc_poly_size
+q_size = len(q_list)
+t_size = len(SEALobj.t_list)
 
-#t_mul_inv = []
-#for t in range(5):
-#    t_mul_inv.append(mul_inv(t_n[t], t_list[t]))
+def to_dtype_object(tensoreuint):
+	shape = tensoreuint.shape
+	tensoreuint.shape = (tensoreuint.size,)
+	new = np.empty((tensoreuint.size,), dtype=object)
+	for i in range(tensoreuint.size):
+		new[i] = int(tensoreuint[i].item())
+	new.shape = shape
+	return new
 
-def oggetto(tensoreuint):
-    shape = tensoreuint.shape
-    flatten(tensoreuint)
-    new = np.empty((tensoreuint.size,), dtype=object)
-    for i in range(tensoreuint.size):
-        new[i] = int(tensoreuint[i].item())
-    new.shape = shape
-    return new
+# WEIGHTS
+dense1_kernel = np.load("./nn_data/dense1_kernel.npy")
+dense1_bias = np.load("./nn_data/dense1_bias.npy")
+dense2_kernel = np.load("./nn_data/dense2_kernel.npy")
+dense2_bias = np.load("./nn_data/dense2_bias.npy")
+conv_kernel = np.load("./nn_data/conv_kernel.npy")
+conv_bias = np.load("./nn_data/conv_bias.npy")
 
-def chinese_remainder(array):
-    risultato = 0
-    for t in range(5):
-        risultato += array[t].item() * t_mul_inv[t] * t_n[t]
-    return risultato % t_prod
-
-def mul_inv(a, b):
-    b0 = b
-    x0, x1 = 0, 1
-    if b == 1: return 1
-    while a > 1:
-        q = a // b
-        a, b = b, a%b
-        x0, x1 = x1 - q * x0, x0
-    if x1 < 0: x1 += b0
-    return x1
+# INPUT AND OUTPUT DATA
+print("Encrypting the input...")
+encrypted_input = np.load("./output_data/plain_layer_0.npy") # not yet encrypted
+examples_count = encrypted_input.shape[0]
+encrypted_input = SEALobj.encrypt_tensor(encrypted_input) # now it is
+np.save("./output_data/enc_layer_0", encrypted_input)
+poly_groups_count = encrypted_input.shape[0]//enc_poly_size
+encrypted_output = np.empty((encrypted_input.shape[0],845,t_size), dtype=np.uint64)
 
 
-mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
-# Set parameters
-learning_rate = 0.001
-
-x = tf.placeholder("float", [None, 784])
-y = tf.placeholder("float", [None, 10])
-
-paddings = tf.constant([[0, 0], [1, 0,], [1, 0]])
-input_layer = tf.reshape(x, [-1, 28, 28])
-input_layer = tf.pad(input_layer, paddings, "CONSTANT") 
-input_layer = tf.reshape(input_layer, [-1, 29, 29, 1])
-
-conv = tf.layers.conv2d(
-    inputs=input_layer,
-    filters=5,
-    kernel_size=[5, 5],
-    strides=[2, 2],
-    padding="valid",
-    activation=None,
-    name='convolution')
-
-flat = tf.contrib.layers.flatten(conv)
-square1 = flat*flat
-pool = tf.layers.dense(square1, units = 100, name='dense1')
-square2 = pool*pool
-output = tf.layers.dense(square2, units = 10, name='dense2')
-model = tf.sigmoid(output)
-loss = tf.reduce_sum((y-model)*(y-model))
-train = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
-
-saver = tf.train.Saver()
-
-encoded_input = np.load("./matrices/encoded_input.npy")
-dense1_kernel = np.load("./matrices/dense1_kernel.npy")
-dense1_bias = np.load("./matrices/dense1_bias.npy")
-dense2_kernel = np.load("./matrices/dense2_kernel.npy")
-dense2_bias = np.load("./matrices/dense2_bias.npy")
-conv_kernel = np.load("./matrices/conv_kernel.npy")
-conv_bias = np.load("./matrices/conv_bias.npy")
+# LAYER 1: convolution + flatten
+print("Computing layer 1/5 (with percentage of progress)...")
+for poly_group_index in range(poly_groups_count):
+	for s_index in range(2):
+		for q_index in range(q_size):
+			temp = q_index + (s_index*q_size) + (poly_group_index*2*q_size)
+			temp = temp / (poly_groups_count*2*q_size)
+			temp = round(temp*1000)
+			print(str(temp/10)+"%")
+			for n_index in range(n_parm+1):
+				axis0_index = n_index + (q_index*(n_parm+1)) + (s_index*q_size*(n_parm+1)) + (poly_group_index*enc_poly_size)
+				for filter_index in range(5):
+					for x_output_index in range(13):
+						for y_output_index in range(13):
+							for t_index in range(t_size):
+								temp = 0
+								for x_filter_index in range(5):
+									for y_filter_index in range(5):
+										temp = temp + \
+											encrypted_input[axis0_index, x_output_index*2+x_filter_index, y_output_index*2+y_filter_index, t_index].item() * \
+											conv_kernel[x_filter_index, y_filter_index, filter_index, t_index].item()
+								if (n_index==0):
+									if (s_index==0):
+										temp = temp + ((conv_bias[filter_index, t_index].item())*k_list[t_index][q_index])
+								temp = temp % q_list[q_index]
+								encrypted_output[axis0_index, filter_index + (y_output_index*5) + (x_output_index*65), t_index] = temp
+encrypted_input = None # all data is stored in encrypted_output now
+np.save("./output_data/enc_layer_1", encrypted_output)
+print("100%")
 
 
-with tf.Session() as sess:
-    saver.restore(sess, './nn_data/net-1')
-    input_size = encoded_input.shape[0]
 
-    if False: #ELOTRO
-        print("Calculation of the convolution layer:")
-
-        #convoluzione + flatten CRIPTATI
-        encoded_input = cripta(encoded_input)
-        poly_groups_count = 4097*4*2
-        poly_groups_count = encoded_input.shape[0]//poly_groups_count
-
-        input_size = encoded_input.shape[0]
-        ris = np.empty((input_size,845,5), dtype=np.uint64)
-
-        for poly_group_index in range(poly_groups_count):
-            for s_index in range(2):
-                for q_index in range(len(q_list)):
-                    temp_sum = q_index + (s_index*4) + (poly_group_index*2*4)
-                    temp_sum = temp_sum / (poly_groups_count*2*4)
-                    temp_sum = round(temp_sum*1000)
-                    print(str(temp_sum/10)+"%")
-                    for n_index in range(4097): #elotro
-                        index = n_index + (q_index*4097) + (s_index*4*4097) + (poly_group_index*2*4*4097)
-                        for j in range(5):
-                            for k in range(13):
-                                for l in range(13):
-                                    for t in range(5):
-                                        temp_sum = 0
-                                        for x_index in range(5):
-                                            for y_index in range(5):
-                                                temp_sum = temp_sum + encoded_input[index, k*2+x_index, l*2+y_index, t].item() * conv_kernel[x_index,y_index,j,t].item()
-                                        if (n_index==0):
-                                            if (s_index==0):
-                                                temp_sum = temp_sum + ((conv_bias[j, t].item())*k_list[t][q_index])
-                                        temp_sum = temp_sum % q_list[q_index]
-                                        ris[index, j + (l*5) + (k*65), t] = temp_sum
-
-        ris = decripta(ris)
-
-        temp = np.load("./matrices/1_conv.npy")
-        confronta(ris, temp)
-
-        print("100%")
-        print("Calculation of the remaining layers")
-
-        #funzione attivazione1: al quadrato
-        ris = ris*ris
-        for t in range(5):
-            ris[...,t] = ris[...,t] % t_list[t]
-
-        #fully connected layer 1
-        temp = np.empty((input_size,100,5), dtype=np.uint64)
-        for t in range(5):
-            temp[...,t] = ris[...,t].dot(dense1_kernel[...,t]) % t_list[t]
-            temp[...,t] = temp[...,t] + dense1_bias[...,t] % t_list[t]
-        ris = temp
-        temp = None
-
-        # square layer 2 CRIPTATO
-        ris = np.load("./matrices/3_1_dense1_bias.npy")
-        ris = SEALobj.encrypt_tensor(ris)
-        ris = SEALobj.square_tensor(ris)
-        ris = SEALobj.decrypt_tensor(ris, 10000)
-        temp = np.load("./matrices/4_attivazione2.npy")
-        SEALobj.check(ris, temp)
-
-        # fully connected layer 2 CRIPTATO
-        ris = np.load("./matrices/4_attivazione2.npy")
-        ris = cripta(ris)
-        ris = oggetto(ris)
-        dense2_kernel = oggetto(dense2_kernel)
-        dense2_bias = oggetto(dense2_bias)
-
-        ## kernel
-        temp = np.empty((ris.shape[0],10,5), dtype=object)
-        for t in range(5):
-            temp[...,t] = ris[...,t].dot(dense2_kernel[...,t])
-        ris = temp
-        temp = None
-
-        ## % q
-        poly_groups_count = 4097*4*2
-        poly_groups_count = ris.shape[0]//poly_groups_count
-
-        for axis1 in range(ris.shape[1]):
-            for axis2 in range(ris.shape[2]):
-                for gdp in range(poly_groups_count):
-                    for size_index in range(2):
-                        for q_index in range(4):
-                            for n_index in range(4097):
-                                axis0 = gdp*2*4*4097 + size_index*4*4097 + q_index*4097 + n_index
-                                temp = ris[axis0,axis1,axis2]
-                                temp = temp % q_list[q_index]
-                                ris[axis0,axis1,axis2] = temp
-
-        ## bias
-        for axis1 in range(ris.shape[1]):
-            for axis2 in range(ris.shape[2]):
-                for gdp in range(poly_groups_count):
-                    for q_index in range(4):
-                        axis0 = gdp*4097*4*2 + (4097*q_index)
-                        temp = ris[axis0,axis1,axis2]
-                        temp = temp + dense2_bias[axis1,axis2]*k_list[axis2][q_index]
-                        temp = temp % q_list[q_index]
-                        ris[axis0,axis1,axis2] = temp
-
-        ris = decripta(ris, 10000)
-
-        temp = np.load("./matrices/5_1_dense2_bias.npy")
-        confronta(ris, temp)
-
-    #FINE TESTS
-    SEALobj.deallocate()
-    exit()
-    print("waiting...")
-
-    #ris = np.load("./matrices/5_1_dense2_bias.npy")
-
-    #CTR INVERSE
-    negative_threshold = t_prod // 2
-    temp = np.empty((input_size,10), dtype=object)
-    for i in range(input_size):
-        for j in range(10):
-            temp[i, j] = chinese_remainder(ris[i, j, :])
-            if (temp[i, j]>negative_threshold):
-                temp[i, j] = temp[i, j] - t_prod
-    ris = temp
-    temp = None
-
-    np.save("./matrices/5_2_decoded.npy", ris)
-
-    #trasforma in predizione
-    ris = np.argmax(ris, axis=1)
-    np.save("./matrices/6_argmax.npy", ris)
+# LAYER 2: square activation function
+print("Computing layer 2/5...")
+encrypted_output = SEALobj.square_tensor(encrypted_output)
+np.save("./output_data/enc_layer_2", encrypted_output)
 
 
-    #test sugli output e stampa
-    predictions = tf.equal(tf.argmax(model, 1), tf.argmax(y, 1))
-    accuracy = tf.reduce_mean(tf.cast(predictions, "float"))
-    predictions2 = tf.equal(ris, tf.argmax(y, 1))
-    accuracy2 = tf.reduce_mean(tf.cast(predictions2, "float"))
-    abla1 = predictions.eval({x: mnist.test.images, y: mnist.test.labels})
-    abla2 = predictions2.eval({y: mnist.test.labels})
 
-    c = 0
-    for i in range(len(abla1)):
-        if (abla1[i]!=abla2[i]):
-            c = c + 1
+# LAYER 3: fully connected layer
+print("Computing layer 3/5 (with percentage of progress)...")
+dense1_kernel = to_dtype_object(dense1_kernel)
+encrypted_output = to_dtype_object(encrypted_output)
+## kernel
+print("Phase 1/2:")
+temp = np.empty((encrypted_output.shape[0],100,t_size), dtype=object)
+for t_index in range(t_size):
+	print(str((t_index*100)//t_size) + "%")
+	temp[...,t_index] = encrypted_output[...,t_index].dot(dense1_kernel[...,t_index])
+encrypted_output = temp
+temp = None
+## % q
+print("100%\nPhase 2/2:")
+previous_percentage = -1
+for axis1 in range(100):
+	temp = (axis1*100)//100
+	if (previous_percentage!=temp):
+		previous_percentage = temp
+		print(str(temp)+"%")
+	for axis2 in range(encrypted_output.shape[2]):
+		for poly_group_index in range(poly_groups_count):
+			for size_index in range(2):
+				for q_index in range(q_size):
+					for n_index in range(n_parm+1):
+						axis0 = poly_group_index*enc_poly_size + size_index*q_size*(n_parm+1) + q_index*(n_parm+1) + n_index
+						temp = encrypted_output[axis0,axis1,axis2]
+						temp = temp % q_list[q_index]
+						encrypted_output[axis0,axis1,axis2] = temp
+## bias
+for axis1 in range(encrypted_output.shape[1]):
+	for axis2 in range(encrypted_output.shape[2]):
+		for poly_group_index in range(poly_groups_count):
+			for q_index in range(q_size):
+				axis0 = poly_group_index*enc_poly_size + ((n_parm+1)*q_index)
+				temp = encrypted_output[axis0,axis1,axis2]
+				temp = temp + dense1_bias[axis1,axis2].item()*k_list[axis2][q_index]
+				temp = temp % q_list[q_index]
+				encrypted_output[axis0,axis1,axis2] = temp
+np.save("./output_data/enc_layer_3", encrypted_output) # !!!! encrypted_output has dtype=object. To load it use the function at the end of the file !!!!
+print("100%")
 
-    print("Numero esatto di predizioni invertite: ", c)
-    print("Accuracy:", accuracy.eval({x: mnist.test.images, y: mnist.test.labels}))
-    print("Accuracy without tensorflow:", accuracy2.eval({x: mnist.test.images, y: mnist.test.labels}))
+
+
+# LAYER 4: square activation function
+print("Computing layer 4/5...")
+encrypted_output = SEALobj.square_tensor(encrypted_output)
+np.save("./output_data/enc_layer_4", encrypted_output)
+
+
+
+# LAYER 5: fully connected layer
+print("Computing layer 5/5...")
+encrypted_output = to_dtype_object(encrypted_output)
+dense2_kernel = to_dtype_object(dense2_kernel)
+## kernel
+temp = np.empty((encrypted_output.shape[0],10,t_size), dtype=object)
+for t_index in range(t_size):
+	temp[...,t_index] = encrypted_output[...,t_index].dot(dense2_kernel[...,t_index])
+encrypted_output = temp
+temp = None
+## % q
+for axis1 in range(encrypted_output.shape[1]):
+	for axis2 in range(encrypted_output.shape[2]):
+		for poly_group_index in range(poly_groups_count):
+			for size_index in range(2):
+				for q_index in range(q_size):
+					for n_index in range(n_parm+1):
+						axis0 = poly_group_index*enc_poly_size + size_index*q_size*(n_parm+1) + q_index*(n_parm+1) + n_index
+						temp = encrypted_output[axis0,axis1,axis2]
+						temp = temp % q_list[q_index]
+						encrypted_output[axis0,axis1,axis2] = temp
+## bias
+for axis1 in range(encrypted_output.shape[1]):
+	for axis2 in range(encrypted_output.shape[2]):
+		for poly_group_index in range(poly_groups_count):
+			for q_index in range(q_size):
+				axis0 = poly_group_index*enc_poly_size + ((n_parm+1)*q_index)
+				temp = encrypted_output[axis0,axis1,axis2]
+				temp = temp + dense2_bias[axis1,axis2].item()*k_list[axis2][q_index]
+				temp = temp % q_list[q_index]
+				encrypted_output[axis0,axis1,axis2] = temp
+np.save("./output_data/enc_layer_5", encrypted_output) # !!!! encrypted_output has dtype=object. To load it use the function at the end of the file !!!!
+
+
+
+# DECRYPT
+print("Decrypting the output...")
+decrypted_output = SEALobj.decrypt_tensor(encrypted_output, examples_count)
+encrypted_output = None
+np.save("./output_data/decrypted_layer_5", decrypted_output)
+
+
+
+print("Done. Results stored in ./output_data/")
