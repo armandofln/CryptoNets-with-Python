@@ -1,5 +1,6 @@
 
-# Infere whithin the encrypted polynomials space.
+# Inference with encrypted messages mod q_i. Use of the Chinese Remainder Theorem
+# to encode large numbers.
 
 import numpy as np
 from wrapper import SEAL
@@ -12,7 +13,7 @@ enc_poly_size = SEALobj.enc_poly_size
 q_size = len(q_list)
 t_size = len(SEALobj.t_list)
 
-def to_dtype_object(tensoreuint):
+def to_object_dtype(tensoreuint):
 	shape = tensoreuint.shape
 	tensoreuint.shape = (tensoreuint.size,)
 	new = np.empty((tensoreuint.size,), dtype=object)
@@ -81,8 +82,8 @@ np.save("./output_data/enc_layer_2", encrypted_output)
 
 # LAYER 3: fully connected layer
 print("Computing layer 3/5 (with percentage of progress)...")
-dense1_kernel = to_dtype_object(dense1_kernel)
-encrypted_output = to_dtype_object(encrypted_output)
+dense1_kernel = to_object_dtype(dense1_kernel)
+encrypted_output = to_object_dtype(encrypted_output)
 ## kernel
 print("Phase 1/2:")
 temp = np.empty((encrypted_output.shape[0],100,t_size), dtype=object)
@@ -132,8 +133,8 @@ np.save("./output_data/enc_layer_4", encrypted_output)
 
 # LAYER 5: fully connected layer
 print("Computing layer 5/5...")
-encrypted_output = to_dtype_object(encrypted_output)
-dense2_kernel = to_dtype_object(dense2_kernel)
+encrypted_output = to_object_dtype(encrypted_output)
+dense2_kernel = to_object_dtype(dense2_kernel)
 ## kernel
 temp = np.empty((encrypted_output.shape[0],10,t_size), dtype=object)
 for t_index in range(t_size):

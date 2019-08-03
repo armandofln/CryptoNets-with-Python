@@ -1,5 +1,5 @@
 
-# Decode plain and encrypted inferred tensors. Compare predictions to floating point numbers
+# Compare and decode plain and decrypted tensors. Compare predictions to floating point numbers
 # in TensorFlow to check the loss of accuracy.
 
 import os.path

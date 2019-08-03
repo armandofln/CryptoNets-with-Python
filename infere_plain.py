@@ -1,6 +1,5 @@
 
-# Inference with NumPy and integers. Use of the Chinese Remainder Theorem to encode large numbers.
-# Compaplain_outputon with floating point numbers in TensorFlow to check the loss of accuracy.
+# Inference with integers mod t_i. Use of the Chinese Remainder Theorem to encode large numbers.
 
 import numpy as np
 from wrapper import t_list

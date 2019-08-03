@@ -7,7 +7,7 @@ import tensorflow as tf
 
 # Set parameters
 learning_rate = 0.001
-training_epochs = 1#30
+training_epochs = 30
 batch_size = 100
 display_step = 2
 

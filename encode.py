@@ -1,7 +1,6 @@
 
-# Encoding of the Neural Networks weights and the input data. Here encoding stands for
-# converting float number n to int((n * precision) % t), where t are the plain modulus
-# parameters in the SEAL library.
+# Pre-encoding of the Neural Networks weights and the input data. Pre-encoding means
+# converting float numbers n to int((n * precision) % t_i), where t_i are the plain moduli.
 
 import numpy as np
 from tensorflow.examples.tutorials.mnist import input_data
@@ -14,7 +13,7 @@ x = tf.placeholder("float", [None, 784])
 y = tf.placeholder("float", [None, 10])
 paddings = tf.constant([[0, 0], [1, 0,], [1, 0]])
 input_layer = tf.reshape(x, [-1, 28, 28])
-input_layer = tf.pad(input_layer, paddings, "CONSTANT") 
+input_layer = tf.pad(input_layer, paddings, "CONSTANT")
 input_layer = tf.reshape(input_layer, [-1, 29, 29, 1])
 conv = tf.layers.conv2d(inputs=input_layer, filters=5, kernel_size=[5, 5], strides=[2, 2], padding="valid", activation=None, name='convolution')
 flat = tf.contrib.layers.flatten(conv)

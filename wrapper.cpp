@@ -348,8 +348,8 @@ extern "C"
 	void decrypt_tensor(uint64_t *input, uint64_t *output, int output_axis0_size, int data_size) {
 		decrypt_tensor_(input, output, output_axis0_size, data_size);
 	}
-	void square_tensor(uint64_t *array_input, uint64_t *array_output, int input_axis0_size, int data_size) {
-		square_tensor_(array_input, array_output, input_axis0_size, data_size);
+	void square_tensor(uint64_t *input, uint64_t *output, int input_axis0_size, int data_size) {
+		square_tensor_(input, output, input_axis0_size, data_size);
 	}
 
 }
