@@ -1,6 +1,6 @@
 
 # Pre-encoding of the Neural Networks weights and the input data. Pre-encoding means
-# converting float numbers n to int((n * precision) % t_i), where t_i are the plain moduli.
+# converting real numbers n to int(n * precision) % t_i, where t_i are the plain moduli.
 
 import numpy as np
 from tensorflow.examples.tutorials.mnist import input_data
