@@ -1,0 +1,89 @@
+\documentclass[a4paper]{article}
+\usepackage{tabularx}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{cite}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{float}
+\usepackage{multirow}
+\usepackage{listings}
+
+\usepackage{indentfirst}
+\usepackage{tensor}
+\usepackage{amssymb}
+\allowdisplaybreaks
+\usepackage{bm}
+\newcommand{\at}[2][]{#1|_{#2}}
+\newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
+\newcommand\norm[1]{\left\lVert#1\right\rVert}
+\usepackage{caption}
+\captionsetup[lstlisting]{font={small}}
+\captionsetup[figure]{font=small}
+\captionsetup[table]{font=small}
+\usepackage{breqn}
+
+\begin{document}
+
+\title{Report of the CryptoNets Project}
+
+\makeatletter
+\let\thetitle\@title
+\let\theauthor\@author
+\let\thedate\@date
+\makeatother
+
+\begin{titlepage}
+	\centering
+    \vspace*{0.5 cm}
+    \includegraphics[scale = 0.75]{images/SapienzaLogo}\\[1.0 cm]	% University Logo
+    \vspace*{-0.3cm}
+    \textsc{\large Ingegneria Informatica, Automatica e Gestionale}\\[2.0 cm]	% Department Name
+    \vspace*{1.2cm}
+    { \fontsize{20.74pt}{18.5pt}\selectfont\bfseries \thetitle \par } % title
+    \vspace*{0.1cm}
+    \textsc{\Large Neural Networks}\\[0.5 cm] % course name
+    \vspace*{5.6cm}
+	\begin{minipage}{0.4\textwidth}
+		\begin{flushleft} \large
+			\emph{Professor:}\\
+			Aurelio Uncini\\
+		\end{flushleft}
+	\end{minipage}~
+	\begin{minipage}{0.4\textwidth}
+		\begin{flushright} \large
+			\emph{Students:} \\
+            Armando Nania\\
+            Josè Luis Bustamante
+		\end{flushright}
+	\end{minipage}\\[2 cm]
+\end{titlepage}
+
+
+\tableofcontents
+\newpage
+
+\input{introduction}
+
+\input{homomorphicencryption}
+\clearpage
+
+\input{neuralnetwork}
+\clearpage
+
+\input{seallibrary}
+\clearpage
+
+\input{projectstructure}
+
+\input{results}
+
+\input{conclusion}
+\clearpage
+
+\bibliography{bibliography}
+\bibliographystyle{ieeetr}
+
+\end{document}

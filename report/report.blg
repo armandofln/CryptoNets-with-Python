@@ -1,0 +1,50 @@
+This is BibTeX, Version 0.99d (TeX Live 2017/Debian)
+Capacity: max_strings=100000, hash_size=100000, hash_prime=85009
+The top-level auxiliary file: report.aux
+The style file: ieeetr.bst
+Database file #1: bibliography.bib
+Warning--empty journal in firstHomEnc
+Warning--empty institution in dowlin2016cryptonets
+Warning--empty journal in seal-manual
+You've used 8 entries,
+            1876 wiz_defined-function locations,
+            520 strings with 4797 characters,
+and the built_in function-call counts, 1523 in all, are:
+= -- 126
+> -- 78
+< -- 1
++ -- 29
+- -- 21
+* -- 108
+:= -- 230
+add.period$ -- 8
+call.type$ -- 8
+change.case$ -- 8
+chr.to.int$ -- 0
+cite$ -- 11
+duplicate$ -- 73
+empty$ -- 160
+format.name$ -- 21
+if$ -- 362
+int.to.chr$ -- 0
+int.to.str$ -- 8
+missing$ -- 4
+newline$ -- 27
+num.names$ -- 8
+pop$ -- 42
+preamble$ -- 1
+purify$ -- 0
+quote$ -- 0
+skip$ -- 44
+stack$ -- 0
+substring$ -- 38
+swap$ -- 17
+text.length$ -- 1
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 0
+warning$ -- 3
+while$ -- 11
+width$ -- 9
+write$ -- 66
+(There were 3 warnings)

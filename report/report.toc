@@ -1,0 +1,27 @@
+\contentsline {section}{\numberline {1}Introduction}{2}
+\contentsline {subsection}{\numberline {1.1}Roadmap}{2}
+\contentsline {section}{\numberline {2}Homomorphic Encryption}{3}
+\contentsline {subsection}{\numberline {2.1}The FV algorithm}{3}
+\contentsline {subsection}{\numberline {2.2}Mismatch between data type}{4}
+\contentsline {subsection}{\numberline {2.3}Chinese remainder theorem}{5}
+\contentsline {subsection}{\numberline {2.4}Negative numbers}{6}
+\contentsline {section}{\numberline {3}Neural Network}{8}
+\contentsline {subsection}{\numberline {3.1}The fundamental operations}{8}
+\contentsline {subsection}{\numberline {3.2}Scaling the weights}{10}
+\contentsline {subsection}{\numberline {3.3}Plain operations}{10}
+\contentsline {subsection}{\numberline {3.4}Network architecture}{11}
+\contentsline {subsection}{\numberline {3.5}Training}{11}
+\contentsline {section}{\numberline {4}SEAL library}{12}
+\contentsline {subsection}{\numberline {4.1}The encrypted polynomials ring}{12}
+\contentsline {subsection}{\numberline {4.2}The wrapper}{13}
+\contentsline {subsubsection}{\numberline {4.2.1}The C++ wrapper}{13}
+\contentsline {subsubsection}{\numberline {4.2.2}The Python wrapper}{13}
+\contentsline {subsection}{\numberline {4.3}The selected parameters for the cryptography scheme}{14}
+\contentsline {section}{\numberline {5}The project structure}{15}
+\contentsline {subsection}{\numberline {5.1}\texttt {train.py}}{16}
+\contentsline {subsection}{\numberline {5.2}\texttt {pre_encode.py}}{16}
+\contentsline {subsection}{\numberline {5.3}\texttt {infere_plain.py}}{16}
+\contentsline {subsection}{\numberline {5.4}\texttt {infere_enc.py}}{16}
+\contentsline {subsection}{\numberline {5.5}\texttt {post_decode.py}}{17}
+\contentsline {section}{\numberline {6}Results}{18}
+\contentsline {section}{\numberline {7}Conclusion}{19}

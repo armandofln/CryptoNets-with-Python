@@ -1,0 +1,39 @@
+\begin{thebibliography}{1}
+
+\bibitem{safeai}
+``Building safe a.i.: A tutorial for encrypted deep learning.''
+  https://iamtrask.github.io/2017/03/17/safe-ai/, 2017.
+
+\bibitem{firstHomEnc}
+L.~A. Ronald L.~Rivest and M.~L. Dertouzos, ``On data banks and privacy
+  homomorphisms,'' 1978.
+
+\bibitem{10.1007/978-3-642-29011-4_28}
+C.~Gentry, S.~Halevi, and N.~P. Smart, ``Fully homomorphic encryption with
+  polylog overhead,'' in {\em Advances in Cryptology -- EUROCRYPT 2012}
+  (D.~Pointcheval and T.~Johansson, eds.), (Berlin, Heidelberg), pp.~465--482,
+  Springer Berlin Heidelberg, 2012.
+
+\bibitem{open-letter}
+``An open letter: research priorities for robust and beneficial artificial
+  intelligence.'' https://futureoflife.org/ai-open-letter.
+
+\bibitem{numerai}
+R.~Craib, ``Encrypted data for efficient markets.''
+  https://medium.com/numerai/encrypted-data-for-efficient-markets-fffbe9743ba8,
+  2016.
+
+\bibitem{dowlin2016cryptonets}
+N.~Dowlin, R.~Gilad-Bachrach, K.~Laine, K.~Lauter, M.~Naehrig, and J.~Wernsing,
+  ``Cryptonets: Applying neural networks to encrypted data with high throughput
+  and accuracy,'' Tech. Rep. MSR-TR-2016-3, February 2016.
+
+\bibitem{seal-manual}
+H.~Chen, K.~Han, Z.~Huang, A.~Jalali, and K.~Laine, ``Simple encrypted
+  arithmetic library v2.3.0,'' 2018.
+
+\bibitem{Fan2012SomewhatPF}
+J.~Fan and F.~Vercauteren, ``Somewhat practical fully homomorphic encryption,''
+  {\em IACR Cryptology ePrint Archive}, vol.~2012, p.~144, 2012.
+
+\end{thebibliography}
