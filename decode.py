@@ -47,18 +47,18 @@ def extended_Euclidean_algorithm(a, b):
 	if x1 < 0: x1 += b0
 	return x1
 
-def chinese_remainder_theorem(array):
+def crt_inverse(array):
 	result = 0
 	for t_index in range(len(array)):
 		result += array[t_index].item() * bezout_coefficients[t_index] * t_product_over_t[t_index]
 	return result % t_product
 
-def crt_inverse(tensor):
+def crt_inverse_on_tensor(tensor):
 	examples_count = tensor.shape[0]
 	temp = np.empty(tensor.shape[:-1], dtype=object)
 	for i in range(examples_count):
 		for j in range(10):
-			temp[i, j] = chinese_remainder_theorem(plain_output[i, j, :])
+			temp[i, j] = crt_inverse(plain_output[i, j, :])
 			if (temp[i, j]>negative_threshold):
 				temp[i, j] = temp[i, j] - t_product
 	return temp
@@ -94,20 +94,20 @@ if (decrypted_output_exists):
 	if (plain_output_exists):
 		if (np.array_equal(plain_output, decrypted_output)):
 			print("Plain and decrypted outputs coincide")
-			predictions = crt_inverse(decrypted_output)
+			predictions = crt_inverse_on_tensor(decrypted_output)
 			string = "Accuracy with SEAL encryption:"
 		else:
 			print("Plain and decrypted outputs are different. Computing accuracy with plain output...")
-			predictions = crt_inverse(plain_output)
+			predictions = crt_inverse_on_tensor(plain_output)
 			string = "Accuracy with integer numbers (no encryption):"
 	else:
 		print("plain_layer_5.npy file is missing. Can't compare decrypted and plain outputs")
-		predictions = crt_inverse(decrypted_output)
+		predictions = crt_inverse_on_tensor(decrypted_output)
 		string = "Accuracy with SEAL encryption:"
 else:
 	print("decrypted_layer_5.npy file is missing. Can't compare decrypted and plain outputs")
 	print("Computing accuracy with plain output...")
-	predictions = crt_inverse(plain_output)
+	predictions = crt_inverse_on_tensor(plain_output)
 	string = "Accuracy with integer numbers (no encryption):"
 predictions = np.argmax(predictions, axis=1)
 
