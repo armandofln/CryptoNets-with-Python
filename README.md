@@ -27,7 +27,7 @@ g++ -std=c++11 -I SEAL -L SEAL/bin -fPIC -shared wrapper.cpp -o SEAL/libseal.so 
 
 ## Running the code
 
-The project consists of 5 files: ```train.py```, ```pre\_encode.py```, ```infere\_plain.py```, ```infere\_enc.py``` and ```post\_decode.py```. They must be executed sequentially, refer to page 15 of the report for more details.
+The project consists of 5 files: ```train.py```, ```pre_encode.py```, ```infere_plain.py```, ```infere\_enc.py``` and ```post\_decode.py```. They must be executed sequentially, refer to page 15 of the report for more details.
 
 > Attention! The execution of these files, especially ```infere\_enc.py```, can take a long time (even beyond 10 hours), depending on the machine used.
 
