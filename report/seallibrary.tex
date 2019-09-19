@@ -55,7 +55,7 @@ The python part of the wrapper uses ctypes, the Python module, to call the dynam
 As discussed above, one of the differences between the SEAL version used in \cite{dowlin2016cryptonets} and that we use is the need, in our case, to break down the parameter $q$ into several divisors. This prevents us from using the same identical parameters used by that paper, since the numbers chosen for the parameter $q$ in the original project are prime numbers. We have therefore decided to keep the choices of the other two parameters ($n$ and $t$) identical and to change only $q$. It is important to note that, due to the decomposition of the $t$ parameter, these parameters are not part of a single encryption scheme, but rather there are 5 schemes: one for each $t_i$. So for each $t_i$ we decided to keep the number of coefficients $n$ (as in \cite{dowlin2016cryptonets}), and the parameters $q$ (differently from how it was done in the original project). Therefore, the five schemes are:
 
 \begin{center}
-\begin{tabular}{ |c|p{2cm}|p{2cm}|c| } 
+\begin{tabular}{ |c|P{2cm}|P{2cm}|c| } 
 \hline
 Scheme number & n & t & q \\
 \hline

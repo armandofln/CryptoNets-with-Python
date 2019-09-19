@@ -29,7 +29,6 @@ class SEAL:
 		self.lib.square_tensor.argtypes = [ctypes.POINTER(ctypes.c_uint64), ctypes.POINTER(ctypes.c_uint64), ctypes.c_int, ctypes.c_int]
 		self.lib.encrypt_tensor.argtypes = [ctypes.POINTER(ctypes.c_uint64), ctypes.POINTER(ctypes.c_uint64), ctypes.c_int, ctypes.c_int]
 		self.lib.decrypt_tensor.argtypes = [ctypes.POINTER(ctypes.c_uint64), ctypes.POINTER(ctypes.c_uint64), ctypes.c_int, ctypes.c_int]
-		self.lib.k_list.argtypes = [ctypes.POINTER(ctypes.c_uint64)]
 		# n
 		self.n_parm = 4096
 		# q
@@ -37,17 +36,18 @@ class SEAL:
 		# t
 		self.t_list = t_list
 		# k
+		q = 1
+		for i in range(len(self.q_list)):
+			q = q * self.q_list[i]
 		self.k_list = []
-		k_list_c_vector = (ctypes.c_uint64 * 20)()
-		self.lib.k_list(k_list_c_vector)
-		for t in range(5):
+		for i in range(len(self.t_list)):
 			k_list_row = []
-			for k in range(4):
-				k_list_row.append(int(k_list_c_vector[(t*4)+k]))
+			d = q // self.t_list[i]
+			for j in range(len(self.q_list)):
+				k_list_row.append(int(d%self.q_list[j]))
 			self.k_list.append(k_list_row)
-		k_list_c_vector = None
 		k_list_row = None
-		#  (n + 1) * q_size * 2
+		#  (n + 1) * q_size * enc_mex_size
 		self.enc_poly_size = (self.n_parm + 1) * len(self.q_list) * 2
 
 	def __del__(self):

@@ -184,14 +184,6 @@ void initialize_() {
 	enc_poly_size = 2 * q_array.size() * (plain_poly_size + 1);
 }
 
-void k_list_(uint64_t * output) {
-	for (int i=0; i<5; i++) {
-		for (int j=0; j<4; j++) {
-			output[(i*4)+j] = evaluator[i]->k_list[j];
-		}
-	}
-}
-
 void encrypt_tensor_(uint64_t *array_input, uint64_t *array_output, int input_axis0_size, int data_size) {
 	int poly_groups_count = input_axis0_size / plain_poly_size;
 	int last_group_size = input_axis0_size % plain_poly_size;
@@ -338,9 +330,6 @@ extern "C"
 	}
 	void initialize() {
 		initialize_();
-	}
-	void k_list(uint64_t * output) {
-		k_list_(output);
 	}
 	void encrypt_tensor(uint64_t *input, uint64_t *output, int input_axis0_size, int data_size) {
 		encrypt_tensor_(input, output, input_axis0_size, data_size);

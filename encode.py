@@ -1,6 +1,6 @@
 
 # Pre-encoding of the Neural Networks weights and the input data. Pre-encoding means
-# converting real numbers n to int(n * precision) % t_i, where t_i are the plain moduli.
+# converting float numbers n to int((n * precision) % t_i), where t_i are the plain moduli.
 
 import numpy as np
 from tensorflow.examples.tutorials.mnist import input_data
@@ -29,7 +29,7 @@ mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
 # Restore session
 with tf.Session() as sess:
-	saver.restore(sess, './nn_data/net-1')
+	saver.restore(sess, './nn_data/net-50')
 	with tf.variable_scope('dense1', reuse=True):
 		dense1_kernel_ = sess.run(tf.get_variable('kernel'))
 		dense1_bias_ = sess.run(tf.get_variable('bias'))
@@ -65,15 +65,15 @@ for i in range(100):
 		for t in range(5):
 			dense2_kernel[i, j, t] = value % t_list[t]
 for i in range(100):
-	value = round(dense1_bias_[i].item()*precision)
+	value = round(dense1_bias_[i].item()*(precision**5))
 	for t in range(5):
 		dense1_bias[i, t] = value % t_list[t]
 for i in range(10):
-	value = round(dense2_bias_[i].item()*precision)
+	value = round(dense2_bias_[i].item()*(precision**11))
 	for t in range(5):
 		dense2_bias[i, t] = value % t_list[t]
 for i in range(5):
-	value = round(conv_bias_[i].item()*precision)
+	value = round(conv_bias_[i].item()*(precision**2))
 	for t in range(5):
 		conv_bias[i, t] = value % t_list[t]
 for i in range(5):

@@ -47,18 +47,18 @@ def extended_Euclidean_algorithm(a, b):
 	if x1 < 0: x1 += b0
 	return x1
 
-def crt_inverse(array):
+def chinese_remainder_theorem(array):
 	result = 0
 	for t_index in range(len(array)):
 		result += array[t_index].item() * bezout_coefficients[t_index] * t_product_over_t[t_index]
 	return result % t_product
 
-def crt_inverse_on_tensor(tensor):
+def crt_inverse(tensor):
 	examples_count = tensor.shape[0]
 	temp = np.empty(tensor.shape[:-1], dtype=object)
 	for i in range(examples_count):
 		for j in range(10):
-			temp[i, j] = crt_inverse(plain_output[i, j, :])
+			temp[i, j] = chinese_remainder_theorem(plain_output[i, j, :])
 			if (temp[i, j]>negative_threshold):
 				temp[i, j] = temp[i, j] - t_product
 	return temp
@@ -93,41 +93,44 @@ if (decrypted_output_exists):
 	decrypted_output = np.load("./output_data/decrypted_layer_5.npy")
 	if (plain_output_exists):
 		if (np.array_equal(plain_output, decrypted_output)):
-			print("Plain and decrypted outputs coincide")
-			predictions = crt_inverse_on_tensor(decrypted_output)
+			print("---- Plain and decrypted outputs coincide ----")
+			cn_predictions = crt_inverse(decrypted_output)
 			string = "Accuracy with SEAL encryption:"
 		else:
-			print("Plain and decrypted outputs are different. Computing accuracy with plain output...")
-			predictions = crt_inverse_on_tensor(plain_output)
+			print("---- Plain and decrypted outputs are different. Computing accuracy with plain output ----")
+			cn_predictions = crt_inverse(plain_output)
 			string = "Accuracy with integer numbers (no encryption):"
 	else:
-		print("plain_layer_5.npy file is missing. Can't compare decrypted and plain outputs")
-		predictions = crt_inverse_on_tensor(decrypted_output)
+		print("---- plain_layer_5.npy file is missing. Can't compare decrypted and plain outputs ----")
+		cn_predictions = crt_inverse(decrypted_output)
 		string = "Accuracy with SEAL encryption:"
 else:
-	print("decrypted_layer_5.npy file is missing. Can't compare decrypted and plain outputs")
+	print("---- decrypted_layer_5.npy file is missing. Can't compare decrypted and plain outputs ----")
 	print("Computing accuracy with plain output...")
-	predictions = crt_inverse_on_tensor(plain_output)
+	cn_predictions = crt_inverse(plain_output)
 	string = "Accuracy with integer numbers (no encryption):"
-predictions = np.argmax(predictions, axis=1)
+cn_predictions = np.argmax(cn_predictions, axis=1)
 
 
 
 # PRINT ACCURACIES
 with tf.Session() as sess:
-	saver.restore(sess, './nn_data/net-1')
-	tf_predictions = tf.equal(tf.argmax(model, 1), tf.argmax(y, 1))
-	tf_predictions = tf_predictions.eval({x: mnist.test.images, y: mnist.test.labels})
-	tf_accuracy = tf.reduce_mean(tf.cast(tf_predictions, "float"))
-	integer_predictions = tf.equal(predictions, tf.argmax(y, 1))
-	integer_predictions = integer_predictions.eval({y: mnist.test.labels})
-	integer_accuracy = tf.reduce_mean(tf.cast(integer_predictions, "float"))
+	saver.restore(sess, './nn_data/net-50')
 
+	tf_guessed_predictions = tf.equal(tf.argmax(model, 1), tf.argmax(y, 1))
+	tf_accuracy = tf.reduce_mean(tf.cast(tf_guessed_predictions, "float"))
+	cn_guessed_predictions = tf.equal(cn_predictions, tf.argmax(y, 1))
+	cn_accuracy = tf.reduce_mean(tf.cast(cn_guessed_predictions, "float"))
+
+
+	tf_guessed_predictions_ = tf_guessed_predictions.eval({x: mnist.test.images, y: mnist.test.labels})
+	cn_guessed_predictions_ = cn_guessed_predictions.eval({y: mnist.test.labels})
 	swapped_predictions_count = 0
-	for i in range(tf_predictions.size):
-		if (tf_predictions[i]!=integer_predictions[i]):
+	for i in range(tf_guessed_predictions_.size):
+		if (tf_guessed_predictions_[i]!=cn_guessed_predictions_[i]):
 			swapped_predictions_count = swapped_predictions_count + 1
 
+
 	print("Accuracy with tensorflow and no CRT:", tf_accuracy.eval({x: mnist.test.images, y: mnist.test.labels}))
-	print(string, integer_accuracy.eval({x: mnist.test.images, y: mnist.test.labels}))
+	print(string, cn_accuracy.eval({x: mnist.test.images, y: mnist.test.labels}))
 	print("Number of swapped predictions: ", swapped_predictions_count)
