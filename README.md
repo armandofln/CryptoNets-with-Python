@@ -27,9 +27,9 @@ g++ -std=c++11 -I SEAL -L SEAL/bin -fPIC -shared wrapper.cpp -o SEAL/libseal.so 
 
 ## Running the code
 
-The project consists of 5 files: ```train.py```, ```pre_encode.py```, ```infere_plain.py```, ```infere\_enc.py``` and ```post\_decode.py```. They must be executed sequentially, refer to page 15 of the report for more details.
+The project consists of 5 files: ```train.py```, ```pre_encode.py```, ```infere_plain.py```, ```infere_enc.py``` and ```post_decode.py```. They must be executed sequentially, refer to page 15 of the report for more details.
 
-> Attention! The execution of these files, especially ```infere\_enc.py```, can take a long time (even beyond 10 hours), depending on the machine used.
+> Attention! The execution of these files, especially ```infere_enc.py```, can take a long time (even beyond 10 hours), depending on the machine used.
 
 ## Genereting a new set of keys
 
@@ -39,6 +39,6 @@ The project is already supplied with a set of keys. If you want to generate a ne
 python3
 from wrapper import SEAL
 SEALobj = SEAL()
-SEALobj.generate\_new\_keys()
+SEALobj.generate_new_keys()
 ```
 
